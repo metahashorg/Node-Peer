@@ -1,0 +1,17 @@
+.DS_Store
+CMakeLists.txt.user
+cmake-build-*/
+build/release
+build/reldeb
+build/debug
+build/cmake
+build/CMakeFiles
+build/src
+build/libs
+build/cmake_install.cmake
+build/CMakeCache.txt
+build/compile_commands.json
+build/CTestTestfile.cmake
+build/Makefile
+build/SniperConfig.cmake
+build/DartConfiguration.tcl
