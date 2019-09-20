@@ -35,7 +35,7 @@ Error: No such container: peer_node
 3fa40f29eac5fa7f0784bd3ad7ca009f9eef27629eed9fb200bd5d5420351e9a
 [2019-09-03 19:04:47] [info] Starting...
 [2019-09-03 19:04:47] [info] Load config file: peer.conf
-[2019-09-03 19:04:47] [info] Peer: 2.1.7 (Sep  3 2019, 20:22:28 UTC), rev 6f0582640e06f355f7de15bc4ffcb231a4a5a095
+[2019-09-03 19:04:47] [info] Peer: 2.1.7 (Sep 20 2019, 14:41:50 UTC), rev 6f0582640e06f355f7de15bc4ffcb231a4a5a095
 [2019-09-03 19:04:47] [info] OpenSSL: OpenSSL 1.1.1b  26 Feb 2019
 [2019-09-03 19:04:47] [info] Config dump:
 [2019-09-03 19:04:47] [info] core
