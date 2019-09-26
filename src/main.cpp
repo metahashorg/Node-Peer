@@ -81,6 +81,8 @@ int main(int argc, char** argv)
         }
 
         mh::Key key(argv[3]);
+        log_info("mh_addr: {}", key.hex_addr());
+
         Proxy proxy(config, counters, key);
         Stats stats(config, counters, key);
 

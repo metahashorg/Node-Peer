@@ -75,15 +75,40 @@ cache::StringCache::unique process_error_code(const mh::Key& key, const JsonRequ
     }
 }
 
-bool sign(string_view privkey, string_view data, string& sig_hex)
+bool sign(const mh::Key& key, string_view data, string& sig_hex)
 {
     array<unsigned char, 200> sig_der{}; // 74
     size_t sig_der_len = sig_der.size();
-    if (!crypto::secp256k1_sign(privkey, data, sig_der.data(), sig_der_len))
+    if (!key.sign(data, sig_der.data(), sig_der_len))
         return false;
 
     strings::bin2hex_append(sig_der.data(), sig_der_len, sig_hex);
     return true;
+}
+
+bool verify(string_view sign, string_view pubkey, string_view data)
+{
+    if (pubkey.empty() || data.empty() || sign.empty())
+        return false;
+
+    if (auto curve = crypto::parse_curve_oid(pubkey); curve) {
+        if (*curve == crypto::Curve::prime256v1)
+            return crypto::openssl_verify(sign, pubkey, data);
+        else if (*curve == crypto::Curve::secp256k1)
+            return crypto::secp256k1_verify(sign, pubkey, data);
+    }
+
+    return false;
+}
+
+bool crypto_selftest(const mh::Key& key)
+{
+    array<unsigned char, 200> sig_der{}; // 74
+    size_t sig_der_len = sig_der.size();
+    if (!key.sign(key.hex_pubkey(), sig_der.data(), sig_der_len))
+        return false;
+
+    return verify(string_view((char*)sig_der.data(), sig_der_len), key.bin_pubkey(), key.hex_pubkey());
 }
 
 intrusive_ptr<http::client::Request> make_http_request(const Config& config, const mh::Key& key,
@@ -100,7 +125,7 @@ intrusive_ptr<http::client::Request> make_http_request(const Config& config, con
     qs->append(key.hex_pubkey());
     qs->append("&sign=");
 
-    if (!sign(key.raw_privkey(), *raw_tx, *qs))
+    if (!sign(key, *raw_tx, *qs))
         return nullptr;
 
     req->url.set_query(*qs);
@@ -115,7 +140,9 @@ intrusive_ptr<http::client::Request> make_http_request(const Config& config, con
 Proxy::Proxy(const Config& config, shared_ptr<GlobalCounters> counters, const mh::Key& key) :
     _config(config), _global_counters(std::move(counters)), _key(key)
 {
-    check(_global_counters, "[Proxy] cannot use null counters");
+    check(_global_counters, "[Peer] cannot use null counters");
+    check(!crypto_selftest(key), "[Peer] crypto selftest failed");
+    log_info("Crypto selftest passed");
 
     for (unsigned i = 0; i < _config.threads_count(); i++) {
         _queues.emplace_back(make_unique<atomic<int64_t>>(0));
@@ -139,14 +166,14 @@ void Proxy::worker_noexcept(unsigned thread_num) noexcept
         log_err(e.what());
     }
     catch (...) {
-        log_err("[Proxy] non std::exception occured");
+        log_err("[Peer] non std::exception occured");
     }
 }
 
 void Proxy::worker(unsigned thread_num)
 {
     auto loop = event::make_loop();
-    check(loop, "[Proxy] cannot init event loop");
+    check(loop, "[Peer] cannot init event loop");
 
     LocalCounters counters;
 

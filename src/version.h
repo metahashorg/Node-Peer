@@ -20,7 +20,7 @@
 
 namespace sniper {
 
-constexpr string_view VERSION = "2.1.7";
+constexpr string_view VERSION = "2.1.8";
 
 constexpr bool PROXY_STRICT_JSONAPI = false;
 
