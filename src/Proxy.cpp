@@ -141,7 +141,7 @@ Proxy::Proxy(const Config& config, shared_ptr<GlobalCounters> counters, const mh
     _config(config), _global_counters(std::move(counters)), _key(key)
 {
     check(_global_counters, "[Peer] cannot use null counters");
-    check(!crypto_selftest(key), "[Peer] crypto selftest failed");
+    check(crypto_selftest(key), "[Peer] crypto selftest failed");
     log_info("Crypto selftest passed");
 
     for (unsigned i = 0; i < _config.threads_count(); i++) {
