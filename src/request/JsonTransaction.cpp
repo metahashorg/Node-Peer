@@ -87,7 +87,7 @@ ErrorCode JsonTransaction::parse(const rapidjson::Document& doc)
     remove_hex_prefix(_pubkey);
     remove_hex_prefix(_sign);
 
-    if (_to.empty() || _value.empty() || _fee.empty() || _nonce.empty() || _pubkey.empty() || _sign.empty())
+    if (_to.empty() || _value.empty() || _nonce.empty() || _pubkey.empty() || _sign.empty())
         return ErrorCode::NoRequiredParams;
 
     return ErrorCode::Ok;
