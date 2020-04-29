@@ -28,7 +28,7 @@ namespace sniper {
 class Proxy final
 {
 public:
-    Proxy(const Config& config, shared_ptr<GlobalCounters> counters, const mh::Key& key);
+    Proxy(Config& config, shared_ptr<GlobalCounters> counters, const mh::Key& key);
     ~Proxy();
 
     int64_t queue_size() const noexcept;
@@ -37,7 +37,7 @@ private:
     void worker_noexcept(unsigned thread_num) noexcept;
     void worker(unsigned thread_num);
 
-    const Config& _config;
+    Config& _config;
     shared_ptr<GlobalCounters> _global_counters;
     const mh::Key& _key;
     vector<std::thread> _workers;

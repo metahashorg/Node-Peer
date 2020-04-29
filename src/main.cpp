@@ -19,6 +19,7 @@
 
 #include <gperftools/malloc_extension.h>
 #include <signal.h>
+#include <pthread.h>
 #include <sniper/event/Loop.h>
 #include <sniper/event/Sig.h>
 #include <sniper/event/Timer.h>
@@ -26,10 +27,14 @@
 #include <sniper/mh/Key.h>
 #include <sniper/std/check.h>
 #include <sniper/threads/Stop.h>
+#include <sniper/event/Timer.h>
+
 #include "Config.h"
 #include "Proxy.h"
 #include "stats/Stats.h"
 #include "version.h"
+#include "DomainGroup.h"
+
 
 using namespace sniper;
 
@@ -73,7 +78,9 @@ int main(int argc, char** argv)
         log_info("Starting...");
 
         auto counters = make_shared<GlobalCounters>();
-        Config config(argv[1], argv[2]);
+        sniper::Config config(argv[1], argv[2], loop);
+        config.GetDomainGroup()->SetConfig(&config);
+        config.GetDomainGroup()->StartWatchers();
 
         if (argc != 4) {
             log_err("Run: peer_node config.conf network_file key_file");

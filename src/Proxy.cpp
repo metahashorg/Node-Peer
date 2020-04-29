@@ -111,14 +111,22 @@ bool crypto_selftest(const mh::Key& key)
     return verify(string_view((char*)sig_der.data(), sig_der_len), key.bin_pubkey(), key.hex_pubkey());
 }
 
-intrusive_ptr<http::client::Request> make_http_request(const Config& config, const mh::Key& key,
+intrusive_ptr<http::client::Request> make_http_request(Config& config, const mh::Key& key,
                                                        cache::StringCache::unique&& raw_tx)
 {
     auto req = http::client::make_request();
 
     req->method = http::client::Method::Post;
-    req->url.set_domain(config.network());
-
+    config.lock_net_mutex();
+    try
+    {
+        req->url.set_domain(config.network());
+        config.unlock_net_mutex();
+    }
+    catch(...)
+    {
+        config.unlock_net_mutex();
+    }
     // QS
     auto qs = cache::StringCache::get_unique(400);
     qs->append("pubk=");
@@ -137,7 +145,7 @@ intrusive_ptr<http::client::Request> make_http_request(const Config& config, con
 
 } // namespace
 
-Proxy::Proxy(const Config& config, shared_ptr<GlobalCounters> counters, const mh::Key& key) :
+Proxy::Proxy(Config& config, shared_ptr<GlobalCounters> counters, const mh::Key& key) :
     _config(config), _global_counters(std::move(counters)), _key(key)
 {
     check(_global_counters, "[Peer] cannot use null counters");

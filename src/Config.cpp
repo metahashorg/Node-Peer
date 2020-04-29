@@ -33,6 +33,8 @@
 #include "Config.h"
 #include "version.h"
 
+#include "DomainGroup.h"
+
 namespace sniper {
 
 namespace {
@@ -40,7 +42,7 @@ namespace {
 //net-main
 //206.189.11.155 9999 256
 //206.189.11.153 9999 256
-tuple<string, vector<net::Peer>> load_network_nodes(const fs::path& p)
+tuple<string, vector<net::Peer>> load_network_nodes(const fs::path& p, DomainGroup* dgptr, uint32_t sti)
 {
     string network;
     vector<net::Peer> nodes;
@@ -55,9 +57,33 @@ tuple<string, vector<net::Peer>> load_network_nodes(const fs::path& p)
 
         if (strings::split(line, " ", cont, cont.max_size()) && cont.size() >= 2) {
             uint32_t ip;
-            if (auto port = strings::fast_atoi64(cont[1]); port && net::ip_from_sv(cont[0], ip)) {
-                log_info("\t{}:{}", cont[0], *port);
-                nodes.emplace_back(ip, *port);
+            if (net::is_ip(cont[0]))//IP-адрес
+            {
+                if (auto port = strings::fast_atoi64(cont[1]); port && net::ip_from_sv(cont[0], ip)) {
+                    log_info("\t{}:{}", cont[0], *port);
+                    nodes.emplace_back(ip, *port);
+                }
+            }
+            else//Доменное имя
+            {
+                uint16_t port = (uint16_t)*strings::fast_atoi64(cont[1]);
+                string domain = std::string(cont[0]);
+                log_info("Insert peer for {}\n", domain.c_str());
+
+                std::vector<std::string> newips;
+                uint32_t minttl = 0;
+                if (ResolveName(domain, newips, minttl))
+                {
+                    std::string curip = newips[0];
+                    string_view ipsv(curip.data(), curip.size());
+                    if (net::ip_from_sv(ipsv, ip))
+                    {
+                        dgptr->AddDomain(domain, port, sti, nodes.size());
+                        nodes.emplace_back(ip, port);
+                    }
+                    else
+                        log_info("Can not convert string ip for domain {} to binary form.", domain);
+                }
             }
         }
     });
@@ -67,11 +93,12 @@ tuple<string, vector<net::Peer>> load_network_nodes(const fs::path& p)
 
 } // namespace
 
-Config::Config(const fs::path& config_p, const fs::path& network_p) :
-    _threads_count(std::thread::hardware_concurrency())
+Config::Config(const fs::path& config_p, const fs::path& network_p, event::loop_ptr l) :
+    _threads_count(std::thread::hardware_concurrency()), loop(l)
 {
     load_config(config_p);
     load_network(network_p);
+
 
     check(!_stats.empty(), "[Config] Stats url not set");
     check(!_network.name().empty(), "[Config] Network name empty");
@@ -82,7 +109,8 @@ void Config::load_network(const fs::path& p)
 {
     log_info("Load network file: {}", p.string());
 
-    auto [network, nodes] = load_network_nodes(p);
+    domainGroup = new DomainGroup(loop);
+    auto [network, nodes] = load_network_nodes(p, domainGroup, _speed_test_interval);
     if (!network.empty())
         _network.set(network);
 
@@ -118,6 +146,8 @@ void Config::load_config(const fs::path& p)
             queue_size = num;
             _thread_queue_size = queue_size / _threads_count;
         }
+
+        core.lookupValue("speed_test_interval", _speed_test_interval);
     }
 
     if (cfg.getRoot().exists("stats")) {
@@ -281,6 +311,40 @@ bool Config::reqs_dump_ok() const noexcept
 bool Config::reqs_dump_err() const noexcept
 {
     return _reqs_dump_err;
+}
+
+void Config::lock_net_mutex()
+{
+    network_mtx.lock();
+}
+
+void Config::unlock_net_mutex()
+{
+    network_mtx.unlock();
+}
+
+DomainGroup* Config::GetDomainGroup()
+{
+    return domainGroup;
+}
+
+void Config::ChangePeer(uint32_t peerNumber, std::string ip, uint16_t port)
+{
+    uint32_t binip;
+    lock_net_mutex();
+    try
+    {
+        string_view ipsv(ip.data(), ip.size());
+        if (net::ip_from_sv(ipsv, binip))
+        {
+            _network.nodes[peerNumber] = net::Peer(binip, port);
+        }
+        unlock_net_mutex();
+    }
+    catch(...)
+    {
+        unlock_net_mutex();
+    }
 }
 
 } // namespace sniper

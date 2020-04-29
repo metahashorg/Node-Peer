@@ -16,19 +16,26 @@
 
 #pragma once
 
+#include <mutex>
+
 #include <sniper/http/client/Config.h>
 #include <sniper/http/server/Config.h>
 #include <sniper/net/Domain.h>
 #include <sniper/std/chrono.h>
 #include <sniper/std/filesystem.h>
 #include <sniper/std/string.h>
+#include <sniper/event/Loop.h>
+
+//#include "DomainGroup.h"
+
+class DomainGroup;
 
 namespace sniper {
 
 class Config final
 {
 public:
-    explicit Config(const fs::path& config, const fs::path& network);
+    explicit Config(const fs::path& config, const fs::path& network, event::loop_ptr l);
 
     [[nodiscard]] const http::server::Config& http_server_config() const noexcept;
     [[nodiscard]] const http::client::Config& http_client_config() const noexcept;
@@ -48,6 +55,11 @@ public:
     [[nodiscard]] const string& stats() const noexcept;
 
     [[nodiscard]] int64_t thread_queue_size() const noexcept;
+
+    void lock_net_mutex();
+    void unlock_net_mutex();
+    DomainGroup* GetDomainGroup();
+    void ChangePeer(uint32_t peerNumber, std::string ip, uint16_t port);
 
 private:
     void load_config(const fs::path& p);
@@ -70,6 +82,11 @@ private:
 
     bool _reqs_dump_ok = false;
     bool _reqs_dump_err = false;
+    uint32_t _speed_test_interval = 3600;
+
+    std::mutex network_mtx;
+    DomainGroup* domainGroup;
+    event::loop_ptr loop;
 };
 
 } // namespace sniper

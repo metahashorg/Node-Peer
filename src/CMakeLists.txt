@@ -15,6 +15,8 @@ set(PROJECT_LIBS
     fmt::fmt
     stdc++fs.a
     tcmalloc
+    -lcurl
+    -lresolv
     )
 
 set(PROJECT_SRC
@@ -34,6 +36,8 @@ set(PROJECT_SRC
     stats/Stats.cpp
     request/JsonTransaction.h
     request/JsonTransaction.cpp
+    DomainGroup.cpp
+    DomainGroup.h
     )
 
 #APP Lib
