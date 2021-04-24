@@ -87,7 +87,7 @@ git clone --recursive https://github.com/metahashorg/peer_node.git
 
 2. Run docker build and wait for a while
 ```
-sudo docker build -t user/peer_node:latest
+sudo docker build -t user/peer_node:latest .
 ```
 
 You can use this image with our start script. Please change 
