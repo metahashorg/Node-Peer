@@ -30,11 +30,6 @@ RUN wget http://dist.schmorp.de/libev/Attic/libev-${LIBEV_VER}.tar.gz -O /tmp/li
     && tar xzf /tmp/libev.tar.gz -C /tmp && cd /tmp/libev-${LIBEV_VER} && ./configure && make --jobs=`nproc` \
     && make install
 
-# libsecp256k1
-RUN git clone https://github.com/bitcoin-core/secp256k1.git /tmp/libsecp256k1 && cd /tmp/libsecp256k1 \
-    && ./autogen.sh && ./configure --enable-static --enable-openssl-tests=no --enable-tests=no --enable-exhaustive-tests=no --enable-coverage=no --enable-benchmark=no \
-    && make --jobs=`nproc` && make install
-
 # libfmt
 ARG LIBFMT_VER=5.3.0
 RUN git clone https://github.com/fmtlib/fmt.git /tmp/libfmt && cd /tmp/libfmt && git checkout ${LIBFMT_VER} \
@@ -54,7 +49,7 @@ RUN git clone https://github.com/openssl/openssl.git /tmp/openssl && cd /tmp/ope
 
 # boost
 ARG LIBBOOST_VER=1.70.0
-RUN wget https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.bz2 -O /tmp/boost.tar.bz2 \
+RUN wget https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.bz2 -O /tmp/boost.tar.bz2 \
     && tar xjf /tmp/boost.tar.bz2 -C /tmp && cd /tmp/boost_1_70_0 && ./bootstrap.sh --without-icu \
     && ./b2 -j`nproc` threading=multi link=static,shared variant=release runtime-link=shared && ./b2 install
 
@@ -64,6 +59,11 @@ RUN git clone https://github.com/hyperrealm/libconfig.git /tmp/libconfig && cd /
     && git checkout ${LIBCONFIG_VER} && autoreconf && ./configure && make --jobs=`nproc` \
     && make --jobs=`nproc` && make install
 
+# libsecp256k1
+ARG LIBSECP_VER=efad3506a8937162e8010f5839fdf3771dfcf516
+RUN git clone https://github.com/bitcoin-core/secp256k1.git /tmp/libsecp256k1 && cd /tmp/libsecp256k1 && git checkout ${LIBSECP_VER} \
+    && ./autogen.sh && ./configure --enable-static --enable-openssl-tests=no --enable-tests=no --enable-exhaustive-tests=no --enable-coverage=no --enable-benchmark=no \
+    && make --jobs=`nproc` && make install
 
 RUN ldconfig
 
